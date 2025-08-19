@@ -1,8 +1,20 @@
-# Paperless-ngx Docker Backup Script
+# Paperless-ngx Docker Backup Scripts
 
 🗂️ **Complete backup solution for Paperless-ngx Docker containers**
 
-This script creates comprehensive backups of your Paperless-ngx installation, including all documents, metadata, configurations, and database content.
+Professional backup system with smart full/incremental strategy for optimal storage efficiency and reliable restores.
+
+## 🎯 Smart Backup Strategy
+
+### 📅 Automated Schedule
+- **Friday**: Full backup (all data)
+- **Saturday-Thursday**: Incremental backup (changes from last 4 weeks)
+
+### ✅ Benefits
+- **Space efficient**: Incremental backups save 80-90% storage
+- **Fast daily backups**: Only changed data is backed up
+- **Safe restores**: Never breaks - combines full + incremental perfectly
+- **Automatic cleanup**: Old backups are automatically removed
 
 ## 📋 What gets backed up
 
@@ -11,134 +23,243 @@ This script creates comprehensive backups of your Paperless-ngx installation, in
 - **Archive Documents** - OCR-processed versions
 - **Thumbnails** - Preview images
 - **Configuration** - All settings and customizations
-- **Individual JSON exports** for:
-  - Tags
-  - Correspondents
-  - Document Types
-  - Storage Paths
-  - Document Metadata
-  - Users
+- **Individual JSON exports** for granular restore options
 
 ## 🚀 Quick Start
 
-1. **Download the script:**
-   ```bash
-   wget https://raw.githubusercontent.com/sambila/paperless-docker-backup/main/paperless_backup.sh
-   chmod +x paperless_backup.sh
-   ```
+### 1. Download Scripts
+```bash
+# Smart backup (recommended)
+wget https://raw.githubusercontent.com/sambila/paperless-docker-backup/main/paperless_smart_backup.sh
+chmod +x paperless_smart_backup.sh
 
-2. **Configure container name:**
-   Edit the script and change `CONTAINER_NAME` to match your Paperless container:
-   ```bash
-   CONTAINER_NAME="your-paperless-container-name"
-   ```
+# Smart restore
+wget https://raw.githubusercontent.com/sambila/paperless-docker-backup/main/paperless_smart_restore.sh
+chmod +x paperless_smart_restore.sh
 
-3. **Run the backup:**
-   ```bash
-   ./paperless_backup.sh
-   ```
+# Simple backup (full backup every time)
+wget https://raw.githubusercontent.com/sambila/paperless-docker-backup/main/paperless_backup.sh
+chmod +x paperless_backup.sh
+```
+
+### 2. Configure Container Name
+Edit the scripts and change `CONTAINER_NAME`:
+```bash
+CONTAINER_NAME="your-paperless-container-name"
+```
+
+### 3. Setup Automated Backups
+Add to crontab for daily automatic backups:
+```bash
+# Smart backup daily at 2 AM
+0 2 * * * /path/to/paperless_smart_backup.sh
+
+# Or simple full backup weekly
+0 2 * * 0 /path/to/paperless_backup.sh
+```
+
+## 📦 Available Scripts
+
+### 🧠 Smart Backup (`paperless_smart_backup.sh`)
+**Recommended for production use**
+
+- **Friday**: Complete full backup
+- **Saturday-Thursday**: Incremental changes only
+- **Automatic cleanup**: Keeps 4 weeks of backups
+- **Space efficient**: 80-90% storage savings
+
+```bash
+./paperless_smart_backup.sh
+```
+
+### 🔄 Smart Restore (`paperless_smart_restore.sh`)
+**Automated restore with intelligence**
+
+```bash
+# Restore to latest backup
+./paperless_smart_restore.sh latest
+
+# Restore to specific date
+./paperless_smart_restore.sh 2025-08-15
+```
+
+Features:
+- **Automatic detection**: Finds correct full + incremental backups
+- **Safe restore**: Backs up current state before restore
+- **Health check**: Verifies restore completeness
+- **Step-by-step**: Clear progress indication
+
+### 🔧 Simple Backup (`paperless_backup.sh`)
+**Full backup every time**
+
+- Creates complete backup each run
+- Larger storage requirements
+- Good for testing or infrequent backups
+
+```bash
+./paperless_backup.sh
+```
 
 ## ⚙️ Configuration
 
 ### Container Name
-Update the container name in the script:
+Update in all scripts:
 ```bash
-CONTAINER_NAME="paperless-ngx"  # Change this to your container name
+CONTAINER_NAME="paperless-ngx"  # Change this
 ```
 
 ### Backup Directory
-By default, backups are stored in `/backup/paperless/YYYYMMDD_HHMMSS`. Change this if needed:
+Default: `/backup/paperless/`. Change if needed:
 ```bash
-BACKUP_DIR="/your/backup/path/$(date +%Y%m%d_%H%M%S)"
+BASE_BACKUP_DIR="/your/backup/path"
+```
+
+### Incremental Period
+Smart backup default: 28 days (4 weeks). Adjust if needed:
+```bash
+INCREMENTAL_DAYS=28  # Days to include in incremental
 ```
 
 ## 📁 Backup Structure
 
-After running, your backup will contain:
+### Smart Backup Structure
+```
+/backup/paperless/
+├── full_20250819_020000/          # Friday full backup
+│   ├── database_dump.json
+│   ├── originals_full.tar.gz
+│   ├── archive_full.tar.gz
+│   ├── thumbnails_full.tar.gz
+│   ├── tags.json
+│   └── ...
+├── incremental_20250820_020000/   # Saturday incremental
+│   ├── incremental_documents.json
+│   ├── originals_incremental.tar.gz
+│   ├── tags_current.json
+│   └── ...
+├── incremental_20250821_020000/   # Sunday incremental
+└── ...
+```
+
+### Simple Backup Structure
 ```
 backup_YYYYMMDD_HHMMSS/
-├── backup.log                 # Backup process log
-├── backup_info.txt           # Backup metadata and info
-├── restore_instructions.txt  # Step-by-step restore guide
-├── database_dump.json        # Complete database export
-├── originals.tar.gz         # Original uploaded documents
-├── archive.tar.gz           # OCR-processed documents
-├── thumbnails.tar.gz        # Preview thumbnails
-├── media.tar.gz             # Complete media directory
-├── tags.json                # Tags export
-├── correspondents.json      # Correspondents export
-├── document_types.json      # Document types export
-├── storage_paths.json       # Storage paths export
-├── documents_metadata.json  # Document metadata
-└── users.json              # Users export
+├── backup.log
+├── backup_info.txt
+├── restore_instructions.txt
+├── database_dump.json
+├── originals.tar.gz
+├── archive.tar.gz
+├── thumbnails.tar.gz
+├── tags.json
+├── correspondents.json
+└── ...
 ```
 
-## 🔄 Restore Process
+## 🔄 Restore Examples
 
-Detailed restore instructions are automatically created in `restore_instructions.txt` with each backup.
+### Smart Restore Usage
+```bash
+# Restore latest backup automatically
+./paperless_smart_restore.sh latest
 
-**Quick restore overview:**
-1. Stop Paperless container
-2. Clear existing data volumes
-3. Start container
-4. Restore database: `docker exec CONTAINER python manage.py loaddata /tmp/database_dump.json`
-5. Extract document archives
-6. Fix permissions
-7. Rebuild search index
-8. Restart container
+# Restore to specific date (finds best backup combination)
+./paperless_smart_restore.sh 2025-08-15
+
+# What it does automatically:
+# 1. Finds newest full backup before date
+# 2. Finds all incremental backups since full backup
+# 3. Applies them in correct order
+# 4. Runs health check
+```
+
+### Manual Restore Process
+For understanding or troubleshooting:
+
+1. **Stop container**
+2. **Apply full backup** (database + all files)
+3. **Apply incremental backups** in chronological order
+4. **Fix permissions** and rebuild search index
+5. **Restart container**
 
 ## 🔧 Compatibility
 
 - **Paperless-ngx** (all versions)
 - **Docker** and **Docker Compose**
 - **Linux/Unix** systems
-- Works with both **SQLite** and **PostgreSQL** backends
+- **SQLite** and **PostgreSQL** backends
 
 ## 📝 Usage Examples
 
 ### Docker Compose
 If using docker-compose, you might need to adjust commands:
 ```bash
-# Instead of: docker exec paperless-ngx
-# Use: docker-compose exec paperless
-```
-
-### Automated Backups
-Add to crontab for automated backups:
-```bash
-# Daily backup at 2 AM
-0 2 * * * /path/to/paperless_backup.sh
+# In scripts, change:
+# docker exec container-name
+# to:
+# docker-compose exec paperless
 ```
 
 ### Custom Backup Location
 ```bash
-# Edit script to change backup directory
-BACKUP_DIR="/mnt/nas/paperless-backups/$(date +%Y%m%d_%H%M%S)"
+# For NAS or network storage
+BASE_BACKUP_DIR="/mnt/nas/paperless-backups"
+```
+
+### Testing Backups
+```bash
+# Test restore to verify backup integrity
+./paperless_smart_restore.sh latest
+
+# Run health check after restore
+# (included in restore script)
 ```
 
 ## ⚠️ Important Notes
 
+### Smart Backup
+- **Requires consistent schedule**: Friday full backups are essential
+- **4-week window**: Incremental backups include changes from last 28 days
+- **Storage calculation**: Full backup size + ~20% for incrementals
+
+### General
 - **Container must be running** during backup
-- **Sufficient disk space** required (backup can be large)
-- **Test restore process** in development environment first
-- **Backup compression** option available (reduces size significantly)
+- **Sufficient disk space** required
+- **Test restore process** in development first
+- **Monitor backup logs** for any issues
 
 ## 🤝 Contributing
 
-Contributions welcome! Please feel free to submit issues, feature requests, or pull requests.
+Contributions welcome! Areas for improvement:
+- Better error handling
+- Support for more backup destinations
+- GUI interface
+- Backup verification tools
 
 ## 📄 License
 
-MIT License - feel free to use and modify as needed.
+MIT License - free to use and modify.
 
 ## 🆘 Support
 
 If you encounter issues:
-1. Check that your container name is correct
-2. Ensure container is running
-3. Verify sufficient disk space
-4. Check container logs for Paperless-specific errors
+
+1. **Check container name** is correct in scripts
+2. **Ensure container is running**
+3. **Verify disk space** is sufficient
+4. **Check backup logs** for error details
+5. **Test with simple backup** first if smart backup fails
+
+### Common Issues
+- **Permission errors**: Run scripts as user with Docker access
+- **Large backups**: Consider network storage for backup destination
+- **Failed incrementals**: Check if Friday full backup exists
+- **Restore failures**: Verify all required backup files are present
 
 ---
 
 **Made for the Paperless-ngx community** 📄✨
+
+Choose your backup strategy:
+- **🧠 Smart Backup**: Production use, space efficient
+- **🔧 Simple Backup**: Testing, one-time backups
